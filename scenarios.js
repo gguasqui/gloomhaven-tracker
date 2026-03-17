@@ -221,7 +221,7 @@ export const SCENARIO_MONSTERS = {
   32: ["putrefactor-atormentador", "vibora-gigante", "terror-de-las-profundidades", "duende-negro"],
 
   // L1 Pag43: Demonio de hielo / Demonio de fuego
-  33: ["demonio-de-hielo", "demonio-de-fuego", "demonio-de-tierra, "rio-de-lava-savvas"; "cellisca-savvas", "demonio-de-viento"],
+  33: ["demonio-de-hielo", "demonio-de-fuego", "demonio-de-tierra", "rio-de-lava-savvas", "cellisca-savvas", "demonio-de-viento"],
 
   // L1 Pag44: Draco desgarrador / Draco escupidor / Draco anciano (jefe)
   34: ["draco-desgarrador", "draco-escupidor", "draco-anciano"],
@@ -231,7 +231,7 @@ export const SCENARIO_MONSTERS = {
   35: ["demonio-de-fuego", "demonio-de-hielo", "demonio-de-tierra", "demonio-de-viento", "guardia-de-la-ciudad", "arquero-de-la-ciudad", "capitan-de-la-guardia"],
 
   // L1 Pag46 (Almenas B): mismos tipos que Almenas A
-  36: ["demonio-de-fuego", "demonio-de-hielo", "demonio-de-tierra", "demonio-de-viento", "arquero-de-la-ciudad", "demonio-supremo""],
+  36: ["demonio-de-fuego", "demonio-de-hielo", "demonio-de-tierra", "demonio-de-viento", "arquero-de-la-ciudad", "demonio-supremo"],
 
   // L1 Pag48: Acechador / Terror de las profundidades
   37: ["acechador", "terror-de-las-profundidades", "putrefactor-atormentador"],
@@ -263,7 +263,7 @@ export const SCENARIO_MONSTERS = {
   45: ["guardia-de-la-ciudad", "arquero-de-la-ciudad", "sabueso"],
 
   // L1 Pag60: Cellisca savvas / Demonio de viento / Horror alado (jefe)
-  46: ["cellisca-savvas", "demonio-de-viento", "horror-alado", demonio-de-noche", "demonio-de-hielo"],
+  46: ["cellisca-savvas", "demonio-de-viento", "horror-alado", "demonio-de-noche", "demonio-de-hielo"],
 
   // L2 Pag0: Acechador / Terror de las profundidades / Putrefactor atormentador / El Ojo que no ve (jefe)
   47: ["acechador", "terror-de-las-profundidades", "putrefactor-atormentador", "el-ojo-que-no-ve"],

@@ -10,873 +10,22 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Share, Linking } from "react-native";
 
-// ── Firebase config ───────────────────────────────────────────────────────────
-const FB_DB_URL = "https://gloomhaven-tracker-8d221-default-rtdb.firebaseio.com";
-const FB_API_KEY = "AIzaSyDmZQFueE6ZUyrZhE3l1TKmynfdVMeW3ZE";
+// ── Datos centralizados ───────────────────────────────────────────────────────
+import {
+  BG, CARD_BG, BORDER, TEXT, MUTED, ACCENT, DARK_BG,
+  FB_DB_URL, FB_API_KEY, STORAGE_KEY, SAVES_KEY, AUTOSAVE_KEY, MAX_MANUAL_SAVES,
+  MONSTER_IMAGES, CLASS_IMAGES, SKILL_STATUS_IMGS, STATUS_EFFECTS,
+  POISON_IMG, WOUND_IMG, PIERCE_IMG, SHIELD_IMG, ATK_IMG, ATK_WHITE_IMG, MUDDLE_IMG,
+  MOVE_IMG, RANGE_IMG, FLYING_IMG, HEAL_IMG, TARGET_IMG, RETALIATE_IMG,
+  ENEMY_TYPES, ID_TO_NAME, SCENARIOS, SCENARIO_MONSTERS, MONSTER_SKILLS,
+  CLASS_LIST, CLASS_ALIAS, ALWAYS_UNLOCKED, LOCKABLE_CLASSES,
+} from "./src/data";
 
-// ── Colores globales ──────────────────────────────────────────────────────────
-const BG      = "#F5EFE4";
-const CARD_BG = "#FFFDF7";
-const BORDER  = "#D4C5A0";
-const TEXT    = "#2C1A00";
-const MUTED   = "#8B7355";
-const ACCENT  = "#7B3F00";
-const DARK_BG = "#3B1E08";
+// STATUS_ROW1/ROW2 derivados de STATUS_EFFECTS
+const STATUS_ROW1 = STATUS_EFFECTS.slice(0, 4);
+const STATUS_ROW2 = STATUS_EFFECTS.slice(4, 8);
 
-// ── Imágenes de monstruos ─────────────────────────────────────────────────────
-const MONSTER_IMAGES = {
-  "Artillería Antigua":          require("./assets/monsters/processed/ancient-artillery.png"),
-  "Arquera Bandido":             require("./assets/monsters/processed/bandit-archer.png"),
-  "Capitán Bandido":             require("./assets/monsters/processed/bandit-commander.png"),
-  "Guardia Bandido":             require("./assets/monsters/processed/bandit-guard.png"),
-  "Duende Negro":                require("./assets/monsters/processed/black-imp.png"),
-  "Capitán de la Guardia":       require("./assets/monsters/processed/captain-of-guard.png"),
-  "Oso de Cueva":                require("./assets/monsters/processed/cave-bear.png"),
-  "Arquero de la Ciudad":        require("./assets/monsters/processed/city-archer.png"),
-  "Guardia de la Ciudad":        require("./assets/monsters/processed/city-guard.png"),
-  "Sectario":                    require("./assets/monsters/processed/cultist.png"),
-  "Jinete Oscuro":               require("./assets/monsters/processed/dark-rider.png"),
-  "Terror de las Profundidades": require("./assets/monsters/processed/deep-terror.png"),
-  "Demonio de Tierra":           require("./assets/monsters/processed/earth-demon.png"),
-  "Draco Anciano":               require("./assets/monsters/processed/elder-drake.png"),
-  "Demonio de Fuego":            require("./assets/monsters/processed/flame-demon.png"),
-  "Duende del Bosque":           require("./assets/monsters/processed/forest-imp.png"),
-  "Demonio de Hielo":            require("./assets/monsters/processed/frost-demon.png"),
-  "Serpiente Venenosa":          require("./assets/monsters/processed/giant-viper.png"),
-  "Chamán Infestor":             require("./assets/monsters/processed/vermling-shaman.png"),
-  "Sabueso":                     require("./assets/monsters/processed/hound.png"),
-  "Arquero Inox":                require("./assets/monsters/processed/inox-archer.png"),
-  "Guardaespaldas Inox":         require("./assets/monsters/processed/inox-bodyguard.png"),
-  "Guardia Inox":                require("./assets/monsters/processed/inox-guard.png"),
-  "Chamán Inox":                 require("./assets/monsters/processed/inox-shaman.png"),
-  "Jekserah":                    require("./assets/monsters/processed/jekserah.png"),
-  "Huesos Vivientes":            require("./assets/monsters/processed/living-bones.png"),
-  "Cadáver Viviente":            require("./assets/monsters/processed/living-corpse.png"),
-  "Espíritu Viviente":           require("./assets/monsters/processed/living-spirit.png"),
-  "Acechador":                   require("./assets/monsters/processed/lurker.png"),
-  "Supervisor Implacable":       require("./assets/monsters/processed/merciless-overseer.png"),
-  "Demonio de Noche":            require("./assets/monsters/processed/night-demon.png"),
-  "Cieno":                       require("./assets/monsters/processed/ooze.png"),
-  "Demonio Supremo":             require("./assets/monsters/processed/prime-demon.png"),
-  "Draco Desgarrador":           require("./assets/monsters/processed/rending-drake.png"),
-  "Cellisca Savvas":             require("./assets/monsters/processed/savvas-icestorm.png"),
-  "Río de Lava Savvas":          require("./assets/monsters/processed/savvas-lavaflow.png"),
-  "Draco Escupidor":             require("./assets/monsters/processed/spitting-drake.png"),
-  "Gólem de Piedra":             require("./assets/monsters/processed/stone-golem.png"),
-  "Demonio de Sol":              require("./assets/monsters/processed/sun-demon.png"),
-  "El Traidor":                  require("./assets/monsters/processed/the-betrayer.png"),
-  "El Incoloro":                 require("./assets/monsters/processed/the-colorless.png"),
-  "La Penumbra":                 require("./assets/monsters/processed/the-gloom.png"),
-  "El Ojo Que No Ve":            require("./assets/monsters/processed/the-sightless-eye.png"),
-  "Explorador Infestor":         require("./assets/monsters/processed/vermling-scout.png"),
-  "Putrefacto Atormentador":     require("./assets/monsters/processed/harrower-infester.png"),
-  "Demonio de Viento":           require("./assets/monsters/processed/wind-demon.png"),
-  "Horror Alado":                require("./assets/monsters/processed/winged-horror.png"),
-};
-
-const CLASS_IMAGES = {
-  "Salvaje":               require("./assets/classes/01 Brute.png"),
-  "Manitas":               require("./assets/classes/02 Tinkerer.png"),
-  "Tejedora de Hechizos":  require("./assets/classes/03 Spellweaver.png"),
-  "Pícara":                require("./assets/classes/04 Scoundrel.png"),
-  "Corazón Hueco":         require("./assets/classes/05 Cragheart.png"),
-  "Ladrona Mental":        require("./assets/classes/06 Mindthief.png"),
-  "Guardiana del Sol":     require("./assets/classes/07 Sun.png"),
-  "Intendente":            require("./assets/classes/08 Three Spears.png"),
-  "Invocadora":            require("./assets/classes/09 Circles.png"),
-  "Manto Nocturno":        require("./assets/classes/10 Eclipse.png"),
-  "Heraldo de la Plaga":   require("./assets/classes/11 Squidface.png"),
-  "Berserker":             require("./assets/classes/12 Lightning.png"),
-  "Cantora de la Verdad":  require("./assets/classes/13 MusicNote.png"),
-  "Acechador del Destino": require("./assets/classes/14 AngryFace.png"),
-  "Cirujano":              require("./assets/classes/15 Saw.png"),
-  "Elementalista":         require("./assets/classes/16 Triangles.png"),
-  "Tirano de Bestias":     require("./assets/classes/17 Two-mini.png"),
-};
-const CLASS_LIST = [
-  // Primeras 6 (desbloqueadas desde el inicio)
-  "Salvaje","Manitas","Tejedora de Hechizos","Pícara","Corazón Hueco","Ladrona Mental",
-  // Clases bloqueadas
-  "Guardiana del Sol","Intendente","Invocadora","Manto Nocturno","Heraldo de la Plaga",
-  "Berserker","Cantora de la Verdad","Acechador del Destino","Cirujano","Elementalista","Tirano de Bestias",
-];
-
-// ── Datos de enemigos ─────────────────────────────────────────────────────────
-const ENEMY_TYPES = {
-  "Guardia Bandido":            { normal:[5,6,6,9,10,11,14,16],    elite:[9,9,10,10,11,12,14,14],   shieldElite:[0,1,1,2,2,2,2,3],                                              color:"#7B3F00", icon:null },
-  "Arquera Bandido":            { normal:[4,5,6,6,8,10,10,13],     elite:[6,7,9,10,10,12,13,17],                                                                                color:"#7B3F00", icon:"🏹" },
-  "Capitán Bandido":            { normal:[], elite:[], boss:[8,10,12,13,15,16,19,23],                                                                                            color:"#7B3F00", icon:"⚔️" },
-  "Guardia de la Ciudad":       { normal:[5,5,7,8,9,10,11,13],     elite:[6,6,9,9,10,12,13,14],     shieldNormal:[0,1,1,1,1,2,2,2], shieldElite:[1,2,2,2,2,3,3,3],            color:"#4A6FA5", icon:null },
-  "Arquero de la Ciudad":       { normal:[4,5,6,6,8,9,9,10],       elite:[6,6,7,8,10,11,12,13],     shieldNormal:[0,0,0,1,1,1,2,2], shieldElite:[0,1,1,2,2,2,2,3],            color:"#4A6FA5", icon:"🏹" },
-  "Capitán de la Guardia":      { normal:[], elite:[], boss:[7,9,11,14,16,20,21,25],                                                                                            color:"#2E86C1", icon:"⚔️" },
-  "Guardia Inox":               { normal:[5,8,9,11,12,13,16,19],   elite:[9,10,12,15,17,19,21,23],                                                                             color:"#8B4513", icon:null },
-  "Arquero Inox":               { normal:[5,6,8,9,10,12,12,15],    elite:[7,8,11,13,14,17,19,23],                                                                              color:"#8B4513", icon:"🏹" },
-  "Chamán Inox":                { normal:[4,6,7,9,10,13,15,16],    elite:[6,9,11,14,16,20,24,27],                                                                              color:"#8B4513", icon:"🔮" },
-  "Guardaespaldas Inox":        { normal:[], elite:[], boss:[6,7,9,10,11,13,15,17],                                                                                             color:"#8B4513", icon:"🪓" },
-  "Huesos Vivientes":           { normal:[5,5,5,7,7,9,10,13],      elite:[6,6,7,10,11,11,11,14],    shieldNormal:[0,1,1,1,1,1,1,1], shieldElite:[0,1,1,1,1,2,2,2],            color:"#C8B89A", icon:"💀" },
-  "Cadáver Viviente":           { normal:[5,7,9,10,11,13,14,15],   elite:[10,10,13,13,15,17,21,25],                                                                            color:"#5C7A3E", icon:"🧟" },
-  "Espíritu Viviente":          { normal:[2,2,2,3,3,4,4,6],        elite:[3,3,3,4,4,6,7,9],         shieldNormal:[1,2,2,2,3,3,3,3], shieldElite:[2,3,3,3,4,4,4,4],            color:"#9B59B6", icon:"👻" },
-  "Explorador Infestor":        { normal:[2,3,3,5,6,8,9,11],       elite:[4,5,5,7,8,11,12,15],                                                                                 color:"#A0522D", icon:"🐀" },
-  "Chamán Infestor":            { normal:[2,2,3,3,3,4,5,7],        elite:[3,3,4,5,5,6,6,8],         shieldNormal:[2,3,3,3,3,3,3,3], shieldElite:[2,3,3,3,4,4,5,5],            color:"#A0522D", icon:"🔮" },
-  "Sectario":                   { normal:[4,5,7,9,10,11,14,15],    elite:[7,9,12,13,15,18,22,25],                                                                              color:"#2C2C54", icon:"🗡️" },
-  "Demonio de Noche":           { normal:[3,5,6,7,8,11,14,15],     elite:[5,8,11,13,15,17,21,21],                                                                              color:"#4A235A", icon:"🌑" },
-  "Demonio de Viento":          { normal:[3,3,4,5,7,9,10,11],      elite:[5,5,7,8,8,11,12,13],      shieldNormal:[1,2,2,2,2,2,3,3], shieldElite:[1,2,2,2,2,2,3,3],            color:"#85C1E9", icon:"🌪️" },
-  "Demonio de Fuego":           { normal:[2,2,3,3,3,4,4,5],        elite:[3,3,4,5,5,6,7,8],         shieldNormal:[2,3,3,3,3,4,4,4], shieldElite:[3,4,4,4,4,5,5,5],            color:"#E74C3C", icon:"🔥" },
-  "Demonio de Hielo":           { normal:[5,6,7,8,10,11,12,14],    elite:[10,10,12,14,18,20,22,25],                                                                            color:"#AED6F1", icon:"❄️" },
-  "Demonio de Tierra":          { normal:[7,9,12,13,15,17,20,22],  elite:[10,13,18,20,21,25,27,32],                                                                            color:"#6E5A3E", icon:"🌱" },
-  "Demonio de Sol":             { normal:[5,7,9,10,11,12,15,15],   elite:[9,12,13,15,16,16,18,22],  shieldNormal:[1,1,1,1,1,2,2,2], shieldElite:[1,1,1,1,1,2,2,2],            color:"#F1C40F", icon:"☀️" },
-  "Demonio Supremo":            { normal:[], elite:[], boss:[8,9,10,12,14,16,20,22],                                                                                            color:"#C0392B", icon:"👿" },
-  "Draco Escupidor":            { normal:[5,6,8,8,9,12,13,16],     elite:[8,9,10,12,14,16,19,21],                                                                              color:"#1E8449", icon:"🐉" },
-  "Draco Desgarrador":          { normal:[5,6,7,7,9,10,11,14],     elite:[7,7,9,10,11,14,15,18],                                                                               color:"#76448A", icon:"🦎" },
-  "Draco Anciano":              { normal:[], elite:[], boss:[11,12,15,16,20,22,27,29],                                                                                          color:"#8B4513", icon:"🐲" },
-  "Gólem de Piedra":            { normal:[10,10,11,11,12,13,16,16],elite:[10,11,14,15,17,19,20,21], shieldNormal:[0,1,1,2,2,2,2,3], shieldElite:[1,2,2,3,3,3,3,4],            color:"#7F8C8D", icon:"🗿" },
-  "Artillería Antigua":         { normal:[4,6,7,8,9,11,14,16],     elite:[7,9,11,13,13,15,16,20],                                                                              color:"#AAB7B8", icon:"💣" },
-  "Oso de Cueva":               { normal:[7,9,11,13,16,17,19,22],  elite:[11,14,17,20,21,24,28,33],                                                                            color:"#6E2F1A", icon:"🐻" },
-  "Sabueso":                    { normal:[4,4,6,8,8,9,11,15],      elite:[6,6,7,8,11,12,15,15],                                                                                color:"#784212", icon:"🐕" },
-  "Duende del Bosque":          { normal:[1,2,2,3,3,4,4,6],        elite:[4,5,6,7,7,8,9,11],        shieldNormal:[1,1,1,1,2,2,2,2], shieldElite:[1,1,1,1,2,2,2,2],            color:"#27AE60", icon:"🧚🏻" },
-  "Duende Negro":               { normal:[3,4,5,5,7,9,10,12],      elite:[4,6,8,8,11,12,14,17],                                                                                color:"#444444", icon:"😈" },
-  "Serpiente Venenosa":         { normal:[2,3,4,4,6,7,8,10],       elite:[3,5,7,8,11,13,14,17],                                                                                color:"#556B2F", icon:"🐍" },
-  "Terror de las Profundidades":{ normal:[3,4,4,5,6,7,8,9],        elite:[5,6,7,8,9,11,13,15],                                                                                 color:"#1F618D", icon:"🦑" },
-  "Acechador":                  { normal:[5,7,9,10,10,11,12,14],   elite:[7,9,12,14,14,15,16,18],   shieldNormal:[0,0,0,0,1,1,1,1], shieldElite:[1,1,1,1,2,2,2,2],            color:"#1A5276", icon:"🦀" },
-  "Cellisca Savvas":            { normal:[7,10,12,12,14,16,16,17], elite:[12,12,15,18,19,21,23,24], shieldNormal:[0,0,0,1,1,1,2,2], shieldElite:[0,1,1,1,2,2,2,3],            color:"#AED6F1", icon:"🌨️" },
-  "Río de Lava Savvas":         { normal:[8,9,11,14,16,18,20,24],  elite:[13,15,18,21,24,27,30,35],                                                                            color:"#E74C3C", icon:"🌋" },
-  "Putrefacto Atormentador":    { normal:[6,7,8,10,12,12,15,17],   elite:[12,12,14,17,19,21,22,26],                                                                            color:"#7D6608", icon:"🐛" },
-  "Cieno":                      { normal:[4,5,7,8,9,10,12,14],     elite:[8,9,11,11,13,15,16,18],   shieldNormal:[0,1,1,1,1,1,1,1], shieldElite:[0,1,1,1,1,1,2,2],            color:"#52BE80", icon:"🟢" },
-  "Jekserah":                   { normal:[], elite:[], boss:[6,7,9,12,13,15,18,22],                                                                                             color:"#8E44AD", icon:"🧙🏻‍♀️" },
-  "La Penumbra":                { normal:[], elite:[], boss:[20,25,29,35,39,46,50,56],                                                                                          color:"#17202A", icon:"🌒" },
-  "El Incoloro":                { normal:[], elite:[], boss:[9,10,11,12,14,15,17,19], shieldBoss:[1,1,1,1,1,1,1,1],                                                             color:"#BDC3C7", icon:"⚪" },
-  "Supervisor Implacable":      { normal:[], elite:[], boss:[6,8,9,11,12,14,16,19],                                                                                             color:"#641E16", icon:"🔨" },
-  "Horror Alado":               { normal:[], elite:[], boss:[6,7,8,10,12,14,17,20],                                                                                             color:"#4A235A", icon:"🦇" },
-  "Jinete Oscuro":              { normal:[], elite:[], boss:[9,10,12,13,15,16,16,18],                                                                                           color:"#1A1A2E", icon:"🐴" },
-  "El Traidor":                 { normal:[], elite:[], boss:[10,12,14,16,18,20,23,27],                                                                                          color:"#8B4513", icon:"🗡️" },
-  "El Ojo Que No Ve":           { normal:[], elite:[], boss:[7,8,10,11,14,15,18,20],                                                                                            color:"#1A1A2E", icon:"👁️" },
-};
-
-// ── Mapeo de IDs de scenarios.js → nombre en ENEMY_TYPES ─────────────────────
-const ID_TO_NAME = {
-  "guardia-bandido":              "Guardia Bandido",
-  "arquera-bandido":              "Arquera Bandido",
-  "capitan-bandido":              "Capitán Bandido",
-  "guardia-de-la-ciudad":         "Guardia de la Ciudad",
-  "arquero-de-la-ciudad":         "Arquero de la Ciudad",
-  "capitan-de-la-guardia":        "Capitán de la Guardia",
-  "guardia-inox":                 "Guardia Inox",
-  "arquero-inox":                 "Arquero Inox",
-  "chaman-inox":                  "Chamán Inox",
-  "guardaespaldas-inox":          "Guardaespaldas Inox",
-  "huesos-vivientes":             "Huesos Vivientes",
-  "cadaver-viviente":             "Cadáver Viviente",
-  "espiritu-viviente":            "Espíritu Viviente",
-  "explorador-infestor":          "Explorador Infestor",
-  "chaman-infestor":              "Chamán Infestor",
-  "sectario":                     "Sectario",
-  "demonio-de-noche":             "Demonio de Noche",
-  "demonio-de-viento":            "Demonio de Viento",
-  "demonio-de-fuego":             "Demonio de Fuego",
-  "demonio-de-hielo":             "Demonio de Hielo",
-  "demonio-de-tierra":            "Demonio de Tierra",
-  "demonio-de-sol":               "Demonio de Sol",
-  "demonio-supremo":              "Demonio Supremo",
-  "draco-escupidor":              "Draco Escupidor",
-  "draco-desgarrador":            "Draco Desgarrador",
-  "draco-anciano":                "Draco Anciano",
-  "golem-de-piedra":              "Gólem de Piedra",
-  "artilleria-antigua":           "Artillería Antigua",
-  "oso-de-cueva":                 "Oso de Cueva",
-  "sabueso":                      "Sabueso",
-  "duende-del-bosque":            "Duende del Bosque",
-  "duende-negro":                 "Duende Negro",
-  "vibora-gigante":               "Serpiente Venenosa",
-  "terror-de-las-profundidades":  "Terror de las Profundidades",
-  "acechador":                    "Acechador",
-  "cellisca-savvas":              "Cellisca Savvas",
-  "rio-de-lava-savvas":           "Río de Lava Savvas",
-  "putrefactor-atormentador":     "Putrefacto Atormentador",
-  "cieno":                        "Cieno",
-  "jekserah":                     "Jekserah",
-  "la-penumbra":                  "La Penumbra",
-  "el-incoloro":                  "El Incoloro",
-  "supervisor-implacable":        "Supervisor Implacable",
-  "horror-alado":                 "Horror Alado",
-  "jinete-oscuro":                "Jinete Oscuro",
-  "el-traidor":                   "El Traidor",
-  "el-ojo-que-no-ve":             "El Ojo Que No Ve",
-};
-
-// ── Escenarios ────────────────────────────────────────────────────────────────
-const SCENARIOS = [
-  { num:1,  name:"Túmulo negro" },           { num:2,  name:"Guarida del Túmulo" },
-  { num:3,  name:"Campamento inox" },         { num:4,  name:"Cripta de los Malditos" },
-  { num:5,  name:"Cripta ruinosa" },          { num:6,  name:"Cripta decadente" },
-  { num:7,  name:"Gruta trepidante" },        { num:8,  name:"Almacén de Gloomhaven" },
-  { num:9,  name:"Mina de diamantes" },       { num:10, name:"Plano del Poder Elemental" },
-  { num:11, name:"Plaza de Gloomhaven A" },   { num:12, name:"Plaza de Gloomhaven B" },
-  { num:13, name:"Templo del Vidente" },      { num:14, name:"Hondonada helada" },
-  { num:15, name:"Altar de la Fuerza" },      { num:16, name:"El paso de la montaña" },
-  { num:17, name:"Isla perdida" },            { num:18, name:"Cloacas abandonadas" },
-  { num:19, name:"Cripta olvidada" },         { num:20, name:"Santuario de la nigromante" },
-  { num:21, name:"Trono infernal" },          { num:22, name:"Templo de los Elementos" },
-  { num:23, name:"Ruinas profundas" },        { num:24, name:"Cámara de los Ecos" },
-  { num:25, name:"Ascenso al Risco de Hielo" },{ num:26, name:"Antiguo aljibe" },
-  { num:27, name:"Grieta destructiva" },      { num:28, name:"Cámara ritual ultraterrestre" },
-  { num:29, name:"Santuario de la Penumbra" },{ num:30, name:"Altar de las profundidades" },
-  { num:31, name:"Plano de la Noche" },       { num:32, name:"Bosque decrépito" },
-  { num:33, name:"Armería savvas" },          { num:34, name:"Cumbre calcinada" },
-  { num:35, name:"Almenas de Gloomhaven A" }, { num:36, name:"Almenas de Gloomhaven B" },
-  { num:37, name:"Fosa maldita" },            { num:38, name:"Jaula de esclavos" },
-  { num:39, name:"Puente traicionero" },      { num:40, name:"Antigua red de defensa" },
-  { num:41, name:"Tumba ancestral" },         { num:42, name:"Reino de la Voz" },
-  { num:43, name:"Nido de dracos" },          { num:44, name:"Asalto tribal" },
-  { num:45, name:"Pantano rebelde" },         { num:46, name:"Cumbre agónica" },
-  { num:47, name:"Guarida del ojo que no ve" },{ num:48, name:"Bosque sombrío" },
-  { num:49, name:"Resistencia rebelde" },     { num:50, name:"Fortaleza fantasma" },
-  { num:51, name:"El Vacío" },                { num:52, name:"Sótano nocivo" },
-  { num:53, name:"Subsuelo de la cripta" },   { num:54, name:"Palacio de Hielo" },
-  { num:55, name:"Maraña neblinosa" },        { num:56, name:"Bosque de los bandidos" },
-  { num:57, name:"Investigación" },           { num:58, name:"Cabaña ensangrentada" },
-  { num:59, name:"Arboleda olvidada" },       { num:60, name:"Laboratorio de alquimia" },
-  { num:61, name:"Faro decrépito" },          { num:62, name:"Foso de almas" },
-  { num:63, name:"Foso de magma" },           { num:64, name:"Laguna submarina" },
-  { num:65, name:"Mina de azufre" },          { num:66, name:"Cala mecánica" },
-  { num:67, name:"Biblioteca arcana" },       { num:68, name:"Páramo tóxico" },
-  { num:69, name:"Pozo de los desdichados" }, { num:70, name:"Isla encadenada" },
-  { num:71, name:"Montañas ventosas" },       { num:72, name:"Arboleda rezumante" },
-  { num:73, name:"Cordillera de aludes" },    { num:74, name:"Barco mercante" },
-  { num:75, name:"Cementerio descuidado" },   { num:76, name:"Colmena de atormentadores" },
-  { num:77, name:"Cripta de los secretos" },  { num:78, name:"Foso de los sacrificios" },
-  { num:79, name:"Templo perdido" },          { num:80, name:"Torre de la Vigilia" },
-  { num:81, name:"Templo del eclipse" },      { num:82, name:"Montaña ardiente" },
-  { num:83, name:"Sombras del interior" },    { num:84, name:"Cueva cristalina" },
-  { num:85, name:"Templo del Sol" },          { num:86, name:"Poblado hostigado" },
-  { num:87, name:"Bahía corrupta" },          { num:88, name:"Plano del Agua" },
-  { num:89, name:"Guarida del Gremio" },      { num:90, name:"Grieta demoníaca" },
-  { num:91, name:"Tumulto salvaje" },         { num:92, name:"Reyerta del callejón" },
-  { num:93, name:"Barco naufragado" },        { num:94, name:"Nido de infestores" },
-  { num:95, name:"Cuenta pendiente" },
-];
-
-const SCENARIO_MONSTERS = {
-  1:  ["guardia-bandido","arquera-bandido","huesos-vivientes"],
-  2:  ["arquera-bandido","capitan-bandido","huesos-vivientes","cadaver-viviente"],
-  3:  ["guardia-inox","arquero-inox","chaman-inox"],
-  4:  ["huesos-vivientes","arquera-bandido","sectario","demonio-de-tierra","demonio-de-viento"],
-  5:  ["huesos-vivientes","cadaver-viviente","sectario"],
-  6:  ["cadaver-viviente","espiritu-viviente"],
-  7:  ["duende-del-bosque","demonio-de-tierra"],
-  8:  ["huesos-vivientes","cadaver-viviente","guardaespaldas-inox"],
-  9:  ["sabueso","explorador-infestor","supervisor-implacable"],
-  10: ["demonio-de-fuego"],
-  11: ["huesos-vivientes","cadaver-viviente","guardia-de-la-ciudad","arquero-de-la-ciudad","capitan-de-la-guardia"],
-  12: ["guardia-de-la-ciudad","arquero-de-la-ciudad","capitan-de-la-guardia"],
-  13: ["sectario","huesos-vivientes","cadaver-viviente"],
-  14: ["sabueso","espiritu-viviente","demonio-de-hielo"],
-  15: ["golem-de-piedra","cellisca-savvas","demonio-de-hielo","demonio-de-viento","putrefactor-atormentador"],
-  16: ["demonio-de-tierra","demonio-de-viento","guardia-inox","arquero-inox"],
-  17: ["explorador-infestor","chaman-infestor","oso-de-cueva"],
-  18: ["vibora-gigante","cieno","explorador-infestor"],
-  19: ["huesos-vivientes","cadaver-viviente"],
-  20: ["huesos-vivientes","demonio-de-noche","demonio-de-sol"],
-  21: ["demonio-de-sol","demonio-de-hielo","demonio-de-noche","demonio-de-viento","demonio-de-tierra","demonio-de-fuego","demonio-supremo"],
-  22: ["huesos-vivientes","sectario","demonio-de-tierra","demonio-de-fuego","demonio-de-hielo","demonio-de-viento"],
-  23: ["golem-de-piedra","artilleria-antigua","huesos-vivientes","espiritu-viviente"],
-  24: ["terror-de-las-profundidades","acechador"],
-  25: ["huesos-vivientes","cadaver-viviente","cieno","duende-del-bosque"],
-  26: ["cadaver-viviente","demonio-de-noche","duende-negro"],
-  27: ["demonio-de-noche","demonio-de-viento","demonio-de-hielo","demonio-de-sol","demonio-de-tierra","demonio-de-fuego"],
-  28: ["huesos-vivientes","cadaver-viviente","espiritu-viviente","duende-negro"],
-  29: ["huesos-vivientes","cadaver-viviente","la-penumbra"],
-  30: ["terror-de-las-profundidades","acechador"],
-  31: ["demonio-de-noche","demonio-de-sol","demonio-de-tierra"],
-  32: ["putrefactor-atormentador","vibora-gigante","terror-de-las-profundidades","duende-negro"],
-  33: ["demonio-de-hielo","demonio-de-fuego","demonio-de-tierra","rio-de-lava-savvas","cellisca-savvas","demonio-de-viento"],
-  34: ["draco-desgarrador","draco-escupidor","draco-anciano"],
-  35: ["demonio-de-fuego","demonio-de-hielo","demonio-de-tierra","demonio-de-viento","guardia-de-la-ciudad","arquero-de-la-ciudad","capitan-de-la-guardia"],
-  36: ["demonio-de-fuego","demonio-de-hielo","demonio-de-tierra","demonio-de-viento","arquero-de-la-ciudad","demonio-supremo"],
-  37: ["acechador","terror-de-las-profundidades","putrefactor-atormentador"],
-  38: ["arquero-inox","chaman-inox","golem-de-piedra","guardia-inox"],
-  39: ["oso-de-cueva","demonio-de-hielo","draco-escupidor","sectario","huesos-vivientes"],
-  40: ["golem-de-piedra","cadaver-viviente","oso-de-cueva","demonio-de-fuego","duende-del-bosque"],
-  41: ["espiritu-viviente","cadaver-viviente","golem-de-piedra","artilleria-antigua"],
-  42: ["demonio-de-noche","demonio-de-viento","espiritu-viviente"],
-  43: ["demonio-de-fuego","draco-desgarrador","draco-escupidor"],
-  44: ["guardia-inox","arquero-inox","sabueso"],
-  45: ["guardia-de-la-ciudad","arquero-de-la-ciudad","sabueso"],
-  46: ["cellisca-savvas","demonio-de-viento","horror-alado","demonio-de-noche","demonio-de-hielo"],
-  47: ["acechador","terror-de-las-profundidades","putrefactor-atormentador","el-ojo-que-no-ve"],
-  48: ["putrefactor-atormentador","demonio-de-tierra","jinete-oscuro"],
-  49: ["artilleria-antigua","arquero-de-la-ciudad","guardia-de-la-ciudad","vibora-gigante"],
-  50: ["demonio-de-noche","demonio-de-viento","demonio-de-sol","demonio-de-tierra"],
-  51: ["la-penumbra"],
-  52: ["draco-escupidor","cieno","explorador-infestor","cadaver-viviente","chaman-infestor"],
-  53: ["vibora-gigante","cadaver-viviente","espiritu-viviente","huesos-vivientes","cieno"],
-  54: ["putrefactor-atormentador","demonio-de-hielo","oso-de-cueva","espiritu-viviente"],
-  55: [],
-  56: ["sabueso","arquera-bandido","draco-desgarrador","guardia-bandido"],
-  57: ["guardia-de-la-ciudad","arquero-de-la-ciudad","sabueso"],
-  58: ["guardia-de-la-ciudad","demonio-de-tierra","putrefactor-atormentador","duende-negro"],
-  59: ["oso-de-cueva","sabueso","duende-del-bosque"],
-  60: ["vibora-gigante","cieno","sabueso","draco-desgarrador","draco-escupidor"],
-  61: ["vibora-gigante","demonio-de-hielo","demonio-de-fuego","cieno"],
-  62: ["huesos-vivientes","espiritu-viviente"],
-  63: ["explorador-infestor","demonio-de-fuego","guardia-inox","arquero-inox"],
-  64: ["duende-del-bosque","draco-desgarrador","cieno"],
-  65: ["explorador-infestor","sabueso","chaman-inox"],
-  66: ["cieno","artilleria-antigua","espiritu-viviente","golem-de-piedra"],
-  67: ["golem-de-piedra","oso-de-cueva","duende-del-bosque"],
-  68: ["duende-negro","vibora-gigante","cadaver-viviente","draco-escupidor"],
-  69: ["explorador-infestor","chaman-infestor","golem-de-piedra","duende-del-bosque","espiritu-viviente"],
-  70: ["demonio-de-noche","demonio-de-viento","espiritu-viviente"],
-  71: ["demonio-de-viento","demonio-de-sol","draco-escupidor"],
-  72: ["cieno","duende-del-bosque","vibora-gigante"],
-  73: ["sabueso","arquero-inox","artilleria-antigua","guardia-inox","chaman-inox"],
-  74: ["guardia-bandido","arquera-bandido","acechador","terror-de-las-profundidades"],
-  75: ["huesos-vivientes","cadaver-viviente","espiritu-viviente"],
-  76: ["demonio-de-noche","putrefactor-atormentador","vibora-gigante","huesos-vivientes"],
-  77: ["guardia-de-la-ciudad","arquero-de-la-ciudad","golem-de-piedra","sabueso"],
-  78: ["huesos-vivientes","guardia-bandido","arquera-bandido","sectario","duende-negro"],
-  79: ["golem-de-piedra","vibora-gigante","el-traidor"],
-  80: ["guardia-de-la-ciudad","arquero-de-la-ciudad","artilleria-antigua","sabueso"],
-  81: ["demonio-de-noche","demonio-de-sol","el-incoloro","artilleria-antigua","golem-de-piedra"],
-  82: ["golem-de-piedra","demonio-de-tierra","demonio-de-fuego"],
-  83: ["sectario","demonio-de-fuego","sabueso","huesos-vivientes","espiritu-viviente"],
-  84: ["demonio-de-tierra","demonio-de-fuego","demonio-de-hielo"],
-  85: ["sabueso","duende-negro","demonio-de-noche","demonio-de-sol"],
-  86: ["chaman-infestor","explorador-infestor","acechador","oso-de-cueva"],
-  87: ["cieno","acechador","duende-negro","terror-de-las-profundidades"],
-  88: ["demonio-de-hielo","acechador","cieno"],
-  89: ["arquera-bandido","guardia-bandido","vibora-gigante","sectario"],
-  90: ["demonio-de-tierra","demonio-de-viento","demonio-de-noche","espiritu-viviente"],
-  91: ["guardia-bandido","arquera-bandido","sabueso","oso-de-cueva","espiritu-viviente"],
-  92: ["guardia-bandido","arquera-bandido","guardia-inox","rio-de-lava-savvas","demonio-de-tierra","demonio-de-fuego","guardia-de-la-ciudad","arquero-de-la-ciudad"],
-  93: ["acechador","demonio-de-hielo","espiritu-viviente"],
-  94: ["sabueso","explorador-infestor","chaman-infestor","oso-de-cueva"],
-  95: ["terror-de-las-profundidades","demonio-de-fuego","demonio-de-tierra","rio-de-lava-savvas"],
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const POISON_IMG  = require("./assets/status/poison.png");
-const WOUND_IMG   = require("./assets/status/wound.png");
-const PIERCE_IMG  = require("./assets/status/piercing.png");
-const SHIELD_IMG    = require("./assets/skills/shield.png");
-const ATK_IMG       = require("./assets/skills/attack-black.png");
-const ATK_WHITE_IMG = require("./assets/skills/attack-white.png");
-const HEAL_IMG      = require("./assets/skills/heal.png");
-const RANGE_IMG     = require("./assets/skills/range.png");
-const TARGET_IMG    = require("./assets/skills/target.png");
-const MOVE_IMG      = require("./assets/skills/move.png");
-const FLYING_IMG    = require("./assets/skills/flying.png");
-const RETALIATE_IMG = require("./assets/skills/retaliation.png");
-const BLESS_IMG     = require("./assets/status/bless.png");
-const CURSE_IMG     = require("./assets/status/curse.png");
-const PULL_IMG      = require("./assets/skills/pull.png");
-const PUSH_IMG      = require("./assets/skills/push.png");
-const MUDDLE_IMG    = require("./assets/status/muddle.png");
-
-// ── Mapa de imágenes de status para skills ────────────────────────────────────
-const SKILL_STATUS_IMGS = {
-  poison:     require("./assets/status/poison.png"),
-  wound:      require("./assets/status/wound.png"),
-  muddle:     require("./assets/status/muddle.png"),
-  immobilize: require("./assets/status/immobilize.png"),
-  disarm:     require("./assets/status/disarm.png"),
-  stun:       require("./assets/status/stun.png"),
-  strengthen: require("./assets/status/strengthen.png"),
-  invisible:  require("./assets/status/invisible.png"),
-  bless:      require("./assets/status/bless.png"),
-  curse:      require("./assets/status/curse.png"),
-  pull:       require("./assets/skills/pull.png"),
-  push:       require("./assets/skills/push.png"),
-};
-
-const MONSTER_SKILLS = {
-  "Artillería Antigua": [
-    {normal:{move:0,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:2,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:3,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:4,range:7,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:5,range:7,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:0,atk:4,range:7,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:0,atk:5,range:7,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Arquera Bandido": [
-    {normal:{move:2,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Guardia Bandido": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"e"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Duende Negro": [
-    {normal:{move:1,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:1,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:1,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:1,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-  ],
-  "Oso de Cueva": [
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Arquero de la Ciudad": [
-    {normal:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:1,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:1,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:2,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:2,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:7,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Guardia de la Ciudad": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Sectario": [
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Jinete Oscuro": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"3+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"3+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"3+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"4+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"4+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"5+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"5+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"6+X",range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Terror de las Profundidades": [
-    {normal:{move:null,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:2,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:null,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:null,atk:4,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:null,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:null,atk:5,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:null,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:null,atk:6,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},elite:{move:null,atk:6,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio de Tierra": [
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{immobilize:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{immobilize:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{immobilize:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{immobilize:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{immobilize:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Draco Anciano": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:3,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:4,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:4,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:5,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:5,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:6,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:6,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:7,range:null},statuses:{poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",pull:"x",push:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio de Fuego": [
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:4,shield:null,retaliate:2,retRange:2,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:4,shield:null,retaliate:3,retRange:2,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:5,shield:null,retaliate:3,retRange:3,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:3,retRange:2,pierce:null,target:null},elite:{move:4,atk:4,range:5,shield:null,retaliate:4,retRange:3,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:4,retRange:2,pierce:null,target:null},elite:{move:4,atk:4,range:5,shield:null,retaliate:4,retRange:3,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:4,shield:null,retaliate:4,retRange:2,pierce:null,target:null},elite:{move:4,atk:5,range:5,shield:null,retaliate:5,retRange:3,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:5,shield:null,retaliate:4,retRange:3,pierce:null,target:null},elite:{move:4,atk:5,range:6,shield:null,retaliate:5,retRange:4,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-  ],
-  "Duende del Bosque": [
-    {normal:{move:3,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{curse:"b"},flying:"x",otrasN:null,otrasE:null},
-  ],
-  "Demonio de Hielo": [
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Serpiente Venenosa": [
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Putrefacto Atormentador": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Sabueso": [
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:5,atk:2,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:5,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:6,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:6,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Arquero Inox": [
-    {normal:{move:2,atk:2,range:2,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Guardia Inox": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:1,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:2,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Chamán Inox": [
-    {normal:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Huesos Vivientes": [
-    {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:6,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:6,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:3},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Cadáver Viviente": [
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Espíritu Viviente": [
-    {normal:{move:2,atk:2,range:2,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:2,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-  ],
-  "Acechador": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:1,target:2},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:1,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:1,target:2},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:2,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:2,target:2},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:2,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:2,target:2},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:3,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:2,target:2},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:3,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:3,target:2},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:4,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:3,target:2},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:4,target:2},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio de Noche": [
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-    {normal:{move:4,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:8,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:"Aplica desventaja"},
-  ],
-  "Cieno": [
-    {normal:{move:1,atk:2,range:2,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:2,range:2,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:1,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Draco Desgarrador": [
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:6,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:6,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:6,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:5,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:6,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{wound:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Cellisca Savvas": [
-    {normal:{move:2,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:2,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:2,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:3,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:3,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:5,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:4,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:4,atk:5,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:5,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:4,atk:6,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},elite:{move:4,atk:6,range:6,shield:null,retaliate:null,retRange:null,pierce:3,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Río de Lava Savvas": [
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"n",wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"e"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b",wound:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Draco Escupidor": [
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:6,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:6,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:7,range:5,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:"x",otrasN:null,otrasE:null},
-  ],
-  "Gólem de Piedra": [
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:1,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:6,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:7,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio de Sol": [
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:2,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-    {normal:{move:3,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:"Ventaja",otrasE:"Ventaja"},
-  ],
-  "Explorador Infestor": [
-    {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Chamán Infestor": [
-    {normal:{move:2,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:1,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:1,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:2,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{muddle:"b"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio de Viento": [
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:3,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:2,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:3,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{disarm:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{disarm:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:3,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{disarm:"e"},flying:"x",otrasN:null,otrasE:null},
-    {normal:{move:4,atk:4,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:5,atk:5,range:4,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{disarm:"e"},flying:"x",otrasN:null,otrasE:null},
-  ],
-  "Horror Alado": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:3,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:3,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:4,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Capitán Bandido": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:3,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:3,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:4,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{immobilize:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Jekserah": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:2,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:3,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:3,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:5,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:5,range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Demonio Supremo": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:4,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:5,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:6,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:6,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:7,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:7,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:8,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "La Penumbra": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:5,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:5,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:6,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:6,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:7,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:7,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:8,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:9,range:null},statuses:{muddle:"x",poison:"x",wound:"x",immobilize:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "El Incoloro": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:2,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:3,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:3,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:4,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:5,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:6,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:7,range:null},statuses:{muddle:"x",poison:"x",wound:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Capitán de la Guardia": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:3,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:3,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:4,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:4,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:5,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:5,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:6,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:6,range:null},statuses:{muddle:"x",wound:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Supervisor Implacable": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"i",range:null},statuses:{wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "Guardaespaldas Inox": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"1+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:2,atk:"1+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"2+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"2+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:"3+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"3+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:"4+p",range:null},statuses:{muddle:"x",poison:"x",disarm:"x",stun:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "El Traidor": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:4,range:3},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:5,range:3},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:3,atk:6,range:4},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:7,range:4},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:4,atk:8,range:4},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:8,range:5},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:9,range:5},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:5,atk:9,range:5},statuses:{poison:"x",wound:"x",disarm:"x",stun:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-  "El Ojo Que No Ve": [
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:5,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:6,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:6,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:7,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:7,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:8,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:8,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-    {normal:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:null,atk:null,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:0,atk:9,range:3},statuses:{muddle:"x",disarm:"x",stun:"x",pull:"x",push:"x",curse:"x"},flying:null,otrasN:null,otrasE:null},
-  ],
-};
-
-const STATUS_EFFECTS = [
-  { id:"poison",     icon:"☠️", label:"Veneno",       color:"#39B54A", img:require("./assets/status/poison.png") },
-  { id:"wound",      icon:"🩸", label:"Herida",       color:"#E03030", img:require("./assets/status/wound.png") },
-  { id:"muddle",     icon:"💫", label:"Confundido",   color:"#C8A020", img:require("./assets/status/muddle.png") },
-  { id:"strengthen", icon:"💪", label:"Fortalecido",  color:"#2E86C1", img:require("./assets/status/strengthen.png") },
-  { id:"immobilize", icon:"🥾", label:"Inmovilizado", color:"#8B0000", img:require("./assets/status/immobilize.png") },
-  { id:"disarm",     icon:"👋", label:"Desarmado",    color:"#607B8B", img:require("./assets/status/disarm.png") },
-  { id:"stun",       icon:"💥", label:"Aturdido",     color:"#1A5276", img:require("./assets/status/stun.png") },
-  { id:"invisible",  icon:"👻", label:"Invisible",    color:"#1C1C1C", img:require("./assets/status/invisible.png") },
-];
-const STATUS_ROW1 = STATUS_EFFECTS.slice(0,4);
-const STATUS_ROW2 = STATUS_EFFECTS.slice(4,8);
-
-let idCounter = 0;
-const newId = () => ++idCounter;
-
+// ── Helpers (getHp, getDefaultShield, etc.) ───────────────────────────────────
 const isBossType   = (t) => { const d=ENEMY_TYPES[t]; return d&&d.boss&&d.boss.length>0; };
 const hasEliteType = (t) => { const d=ENEMY_TYPES[t]; return d&&d.elite&&d.elite.length>0; };
 
@@ -890,58 +39,19 @@ function getDefaultShield(type,variant,lvl){
   const arr=variant==="elite"?d.shieldElite:variant==="boss"?d.shieldBoss:d.shieldNormal;
   return arr?(arr[Math.min(lvl,arr.length-1)]??0):0;
 }
-
-// Obtener lista de nombres de monstruos para un escenario dado
 function getMonstersForScenario(scenarioNum){
   const ids = SCENARIO_MONSTERS[scenarioNum] || [];
   return ids.map(id => ID_TO_NAME[id]).filter(Boolean);
 }
 
-// ── StatCounter ───────────────────────────────────────────────────────────────
-function StatCounter({icon,label,value,onChange,compact=false}){
-  return(
-    <View style={[ss.statRow,compact&&{paddingVertical:3}]}>
-      <Text style={ss.statIcon}>{icon}</Text>
-      <Text style={ss.statLabel}>{label}</Text>
-      <TouchableOpacity style={ss.btnSm} onPress={()=>onChange(Math.max(0,value-1))}>
-        <Text style={ss.btnSmTxt}>−</Text>
-      </TouchableOpacity>
-      <Text style={ss.statVal}>{value}</Text>
-      <TouchableOpacity style={ss.btnSm} onPress={()=>onChange(value+1)}>
-        <Text style={ss.btnSmTxt}>+</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+let idCounter = 0;
+const newId = () => ++idCounter;
 
-const VS={
+const VS = {
   normal:{border:"#B89A60",hBg:()=>"#FFFFFF",bBg:"#FFFFFF",bBorder:()=>"#9A7840",label:"Normal",tc:"#3D2200"},
   elite: {border:"#C9920A",hBg:()=>"#FFF0A0",bBg:"#FFE650",bBorder:()=>"#C9920A",label:"Élite",  tc:"#6B4800"},
   boss:  {border:"#8B0000",hBg:()=>"#FFE0E0",bBg:"#FFD0D0",bBorder:()=>"#8B0000",label:"Jefe",   tc:"#6B0000"},
 };
-
-// ── Alias de clases bloqueadas (nombres simbólicos) ───────────────────────────
-const CLASS_ALIAS = {
-  "Guardiana del Sol":     "Sun",
-  "Intendente":            "Three Spears",
-  "Invocadora":            "Circles",
-  "Manto Nocturno":        "Eclipse",
-  "Heraldo de la Plaga":   "Squidface",
-  "Berserker":             "Lightning",
-  "Cantora de la Verdad":  "Music Note",
-  "Acechador del Destino": "Angry Face",
-  "Cirujano":              "Saw",
-  "Elementalista":         "Triangles",
-  "Tirano de Bestias":     "Two Mini",
-};
-
-const ALWAYS_UNLOCKED = ["Salvaje","Manitas","Tejedora de Hechizos","Pícara","Corazón Hueco","Ladrona Mental"];
-const LOCKABLE_CLASSES = CLASS_LIST.slice(6);
-const STORAGE_KEY        = "@gloomhaven_unlocked_classes";
-const SAVES_KEY          = "@gloomhaven_saves";
-const AUTOSAVE_KEY       = "@gloomhaven_autosave";
-const MAX_MANUAL_SAVES   = 20;
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FIREBASE REST SERVICE
@@ -983,48 +93,29 @@ const FB = {
     }catch(e){}
   },
 
-  // Escuchar cambios en tiempo real
-  // Web: SSE nativo sin auth / Android: polling cada 2s (más confiable que react-native-sse)
+  // Escuchar cambios en tiempo real — polling en web y mobile (más confiable)
   listen(path, onData, onError){
-    if(Platform.OS === "web"){
-      // Web — SSE nativo del browser
-      const url = `${FB_DB_URL}/${path}.json`;
-      let es;
-      try{
-        es = new EventSource(url);
-        es.addEventListener("put", (e)=>{
-          try{ onData(JSON.parse(e.data)); }catch(_){}
-        });
-        es.addEventListener("patch", (e)=>{
-          try{ onData(JSON.parse(e.data)); }catch(_){}
-        });
-        es.onerror = onError||null;
-      }catch(e){ if(onError) onError(e); }
-      return ()=>{ try{ es?.close(); }catch(_){} };
-    } else {
-      // Android — polling cada 2 segundos
-      const url = `${FB_DB_URL}/${path}.json?auth=${FB_API_KEY}`;
-      let lastData = null;
-      let active = true;
-      const poll = async () => {
-        while(active){
-          try{
-            const r = await fetch(url);
-            if(r.ok){
-              const json = await r.json();
-              const str = JSON.stringify(json);
-              if(str !== lastData){
-                lastData = str;
-                if(json !== null) onData({ path:"/", data: json });
-              }
+    const url = `${FB_DB_URL}/${path}.json?auth=${FB_API_KEY}`;
+    let lastData = null;
+    let active = true;
+    const poll = async () => {
+      while(active){
+        try{
+          const r = await fetch(url);
+          if(r.ok){
+            const json = await r.json();
+            const str = JSON.stringify(json);
+            if(str !== lastData){
+              lastData = str;
+              if(json !== null) onData({ path:"/", data: json });
             }
-          }catch(e){}
-          await new Promise(res => setTimeout(res, 2000));
-        }
-      };
-      poll();
-      return ()=>{ active = false; };
-    }
+          }
+        }catch(e){ if(onError) onError(e); }
+        await new Promise(res => setTimeout(res, 2000));
+      }
+    };
+    poll();
+    return ()=>{ active = false; };
   },
 };
 
@@ -1111,10 +202,8 @@ function MultiplayerProvider({ children }){
     if(unlistenGs.current) unlistenGs.current();
     unlistenGs.current = FB.listen(`salas/${sid}/gameState`, (data)=>{
       if(!data || !data.data) return;
-      // Solo aplicar si NO somos el host (el host es la fuente de verdad)
-      if(!isHostRef.current && data.data){
-        setOnRemoteState(()=>data.data);
-      }
+      // Todos reciben y aplican (sincronización bidireccional)
+      setOnRemoteState(()=>data.data);
     });
   };
 
@@ -1135,6 +224,7 @@ function MultiplayerProvider({ children }){
     isHostRef.current = true;
     setOnline(true);
     startHeartbeat(sid);
+    listenGameState(sid);
     listenPlayers(sid);
     return sid;
   };
@@ -1175,10 +265,10 @@ function MultiplayerProvider({ children }){
     setOnRemoteState(null);
   };
 
-  // ── Push gameState (solo host) ────────────────────────────────────────────
+  // ── Push gameState (cualquier participante puede enviar cambios) ───────────
   const pushGameState = async (state) => {
     const sid = salaIdRef.current;
-    if(!sid || !isHostRef.current) return;
+    if(!sid) return;
     await FB.set(`salas/${sid}/gameState`, state);
   };
 
@@ -2443,13 +1533,13 @@ function GloomhavenTracker({ scenarioNum, onBack, classes=[], saveId=null, initi
   React.useEffect(()=>{
     if(enemies.length===0 && !roundActive) return; // no guardar estado vacío inicial
     autoSave(buildSaveState());
-    // Push a Firebase si soy host de una sala online
-    if(online && isHost) pushGameState(buildSaveState());
+    // Push a Firebase si hay sala online (cualquier participante puede enviar)
+    if(online && !applyingRemote.current) pushGameState(buildSaveState());
   }, [enemies, doneTurnIds, activeTurnId, roundActive, initNumbers, skipThisRound]);
 
-  // Aplicar estado remoto recibido (cuando soy jugador, no host)
+  // Aplicar estado remoto recibido (todos los participantes sincronizan)
   React.useEffect(()=>{
-    if(!onRemoteState || isHost || applyingRemote.current) return;
+    if(!onRemoteState || applyingRemote.current) return;
     applyingRemote.current = true;
     const s = onRemoteState;
     if(s.enemies)       setEnemies(s.enemies.map(e=>({...e, statuses: Array.isArray(e.statuses)?e.statuses:[]})));
@@ -3116,6 +2206,16 @@ Abrí la app → Conectarse a partida → ingresá el código`,
       <Text style={ss.hTitleSm} numberOfLines={1}>
         {scenarioData?`#${scenarioData.num} — ${scenarioData.name}`:"Partida libre"}
       </Text>
+      {online&&(
+        <View style={{flexDirection:"row",alignItems:"center",gap:3,marginRight:4}}>
+          <View style={{width:7,height:7,borderRadius:4,backgroundColor:"#22A355"}}/>
+          <Text style={{color:"#88C898",fontSize:11,fontWeight:"bold"}}>{jugadores}</Text>
+        </View>
+      )}
+      <TouchableOpacity onPress={compartirSala}
+        style={{paddingHorizontal:8,paddingVertical:6,justifyContent:"center",alignItems:"center"}}>
+        <Ionicons name={online?"people":"share-social-outline"} size={22} color="#F5DEB3"/>
+      </TouchableOpacity>
       <TouchableOpacity onPress={saveManually}
         style={{marginRight:6,paddingHorizontal:8,paddingVertical:4,borderRadius:8,
           backgroundColor:saveConfirm?"#22A355":"transparent",
