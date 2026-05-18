@@ -77,6 +77,7 @@ export const SHIELD_IMG = require("../../assets/skills/shield.png");
 export const ATK_IMG = require("../../assets/skills/attack-black.png");
 export const ATK_WHITE_IMG = require("../../assets/skills/attack-white.png");
 export const HEAL_IMG = require("../../assets/skills/heal.png");
+export const TRAP_IMG = require("../../assets/skills/trap.png");
 export const RANGE_IMG = require("../../assets/skills/range.png");
 export const TARGET_IMG = require("../../assets/skills/target.png");
 export const MOVE_IMG = require("../../assets/skills/move.png");
