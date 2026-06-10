@@ -17,7 +17,7 @@ export const MONSTER_IMAGES = {
   "Demonio de Fuego": require("../../assets/monsters/processed/flame-demon.png"),
   "Duende del Bosque": require("../../assets/monsters/processed/forest-imp.png"),
   "Demonio de Hielo": require("../../assets/monsters/processed/frost-demon.png"),
-  "Serpiente Venenosa": require("../../assets/monsters/processed/giant-viper.png"),
+  "Víbora Gigante": require("../../assets/monsters/processed/giant-viper.png"),
   "Chamán Infestor": require("../../assets/monsters/processed/vermling-shaman.png"),
   "Sabueso": require("../../assets/monsters/processed/hound.png"),
   "Arquero Inox": require("../../assets/monsters/processed/inox-archer.png"),

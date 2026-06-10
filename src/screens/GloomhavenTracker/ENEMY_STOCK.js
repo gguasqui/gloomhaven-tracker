@@ -11,7 +11,7 @@ export const ENEMY_STOCK = {
   "Huesos Vivientes":           10,
   "Cieno":                      10,
   "Explorador Infestor":        10,
-  "Serpiente Venenosa":         10,
+  "Víbora Gigante":             10,
   "Terror de las Profundidades":10,
   // 6 fichas
   "Arquera Bandido":             6,
@@ -19,7 +19,6 @@ export const ENEMY_STOCK = {
   "Arquero de la Ciudad":        6,
   "Guardia de la Ciudad":        6,
   "Sectario":                    6,
-  "Putrefacto Atormentador":     6,
   "Sabueso":                     6,
   "Arquero Inox":                6,
   "Guardia Inox":                6,
@@ -35,13 +34,14 @@ export const ENEMY_STOCK = {
   "Demonio de Sol":              6,
   "Draco Escupidor":             6,
   "Draco Desgarrador":           6,
+  "Artillería Antigua":          6,
+  "Gólem de Piedra":             6,
   // 4 fichas
-  "Artillería Antigua":          4,
   "Oso de Cueva":                4,
   "Chamán Inox":                 4,
   "Cellisca Savvas":             4,
   "Río de Lava Savvas":          4,
-  "Gólem de Piedra":             4,
+  "Putrefacto Atormentador":     4,
   // Jefes — 1 ficha, excepto Guardaespaldas Inox = 2
   "Capitán Bandido":             1,
   "Capitán de la Guardia":       1,

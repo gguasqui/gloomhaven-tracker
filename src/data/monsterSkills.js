@@ -151,7 +151,7 @@ export const MONSTER_SKILLS =
     {normal:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
     {normal:{move:3,atk:5,range:null,shield:null,retaliate:3,retRange:null,pierce:null,target:null},elite:{move:4,atk:5,range:null,shield:null,retaliate:4,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{},flying:null,otrasN:null,otrasE:null},
   ],
-  "Serpiente Venenosa": [
+  "Víbora Gigante": [
     {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
     {normal:{move:2,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:2,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
     {normal:{move:3,atk:1,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},elite:{move:3,atk:2,range:null,shield:null,retaliate:null,retRange:null,pierce:null,target:null},boss:{move:null,atk:null,range:null},statuses:{poison:"b"},flying:null,otrasN:null,otrasE:null},
